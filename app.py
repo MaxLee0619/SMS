@@ -43,7 +43,11 @@ def index():
 @app.route('/add_student', methods=['GET', 'POST'])
 def add_student():
     if request.method == 'POST':
+        # if student id already exists, return error
         student_id = request.form.get("student-id")
+        if collection.find_one({"_id": request.form.get("student-id")}):
+            return render_template("add_student.html", error="Student ID already exists")
+
         name = request.form.get("name")
         age = request.form.get("age")
         gender = request.form.get("gender")
@@ -130,9 +134,10 @@ def student_detail(student_id):
 def add_task():
     # Get the list of student IDs from the database (replace StudentDB with your actual database connection)
     student_ids = collection.find().distinct("_id")
-
     if request.method == 'POST':
         task_id = request.form.get("task-id")
+        if taskdb.find_one({"_id": request.form.get("task-id")}):
+            return render_template("add_task.html", error="Task ID already exists")
         task_name = request.form.get("task-name")
         student_id = request.form.get("student-id")
         score = request.form.get("score")
@@ -168,8 +173,10 @@ def edit_task(task_id):
             task['task_name'] = request.form.get("task-name")
         if request.form.get("score") != "":
             task['score'] = request.form.get("score")
+
         task['task_last_updated'] = datetime.datetime.now()
         task['task_updated_by'] = "admin"
+
         task['is_deleted'] = request.form.get("is_deleted")
 
         taskdb.update_one({"_id": task_id}, {"$set": task})
@@ -178,10 +185,12 @@ def edit_task(task_id):
 
     return render_template("edit_task.html", task=task)
 
+
 @app.route('/delete_task/<task_id>', methods=['GET', 'POST'])
 def delete_task(task_id):
     taskdb.delete_one({"_id": task_id})
     return redirect(url_for("index"))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
